@@ -1,4 +1,5 @@
 from __future__ import print_function
+import enum
 from operator import attrgetter
 from gaps import image_helpers
 from gaps.selection import roulette_selection
@@ -7,6 +8,9 @@ from gaps.individual import Individual
 from gaps.image_analysis import ImageAnalysis
 from gaps.plot import Plot
 from gaps.progress_bar import print_progress
+from pathlib import Path
+import os
+import glob
 
 
 class GeneticAlgorithm(object):
@@ -24,6 +28,12 @@ class GeneticAlgorithm(object):
 
     def start_evolution(self, verbose):
         print("=== Pieces:      {}\n".format(len(self._pieces)))
+        sol_path = "./puzzle_solutions"
+        Path(sol_path).mkdir(parents=True, exist_ok=True) #create dir if it doesn't exist
+        
+        #remove contents from solutions folder 
+        files = glob.glob('%s/*'%sol_path)
+        for f in files: os.remove(f)
 
         if verbose:
             plot = Plot(self._image)
@@ -34,7 +44,7 @@ class GeneticAlgorithm(object):
         best_fitness_score = float("-inf")
         termination_counter = 0
 
-        for generation in range(self._generations):
+        for N,generation in enumerate(range(self._generations)):
             print_progress(generation, self._generations - 1, prefix="=== Solving puzzle: ")
 
             new_population = []
@@ -51,7 +61,7 @@ class GeneticAlgorithm(object):
                 child = crossover.child()
                 new_population.append(child)
 
-            fittest = self._best_individual()
+            fittest,  partial_population = self._best_individual() #partial_population=n*100% of the population (currently n=0.2)
 
             if fittest.fitness <= best_fitness_score:
                 termination_counter += 1
@@ -66,7 +76,13 @@ class GeneticAlgorithm(object):
             self._population = new_population
 
             if verbose:
-                plot.show_fittest(fittest.to_image(), "Generation: {} / {}".format(generation + 1, self._generations))
+                #plot.show_fittest(fittest.to_image(), "Generation: {} / {}".format(generation + 1, self._generations), file_name="%s/%s.jpg"%(sol_path,N))
+                #print(partial_population.__dict__)
+                #save the partial pulation as images
+                for idx, pop in enumerate(partial_population):
+                  print(pop._fitness)
+                  plot.show_fittest(pop.to_image(), "Generation: {} / {}".format(generation + 1, self._generations), file_name="%s/%s_%s.jpg"%(sol_path, N, idx))
+
 
         return fittest
 
@@ -76,4 +92,4 @@ class GeneticAlgorithm(object):
 
     def _best_individual(self):
         """Returns the fittest individual from population"""
-        return max(self._population, key=attrgetter("fitness"))
+        return max(self._population, key=attrgetter("fitness")), sorted(self._population, key=attrgetter("fitness"))[-1:] #round(0.05*len(self._population))
