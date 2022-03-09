@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import warnings
 import matplotlib.cbook
+import cv2
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
@@ -22,10 +23,11 @@ class Plot(object):
         self._current_image = ax.imshow(image, aspect="auto", animated=True)
         self.show_fittest(image, title)
 
-    def show_fittest(self, image, title):
+    def show_fittest(self, image, title, file_name="test.jpg"):
         plt.suptitle(title, fontsize=20)
         self._current_image.set_data(image)
-        plt.draw()
-
+        #plt.draw()
+        cv2.imwrite(file_name, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        
         # Give pyplot 0.05s to draw image
-        plt.pause(0.05)
+        #plt.pause(0.05)
